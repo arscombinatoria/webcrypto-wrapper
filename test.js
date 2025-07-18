@@ -81,7 +81,7 @@ async function runCryptoWebTests() {
     const keyHex = keyWrapper.toString();
     const plaintext = 'Secret Message';
     const enc = await CryptoWeb.AES.encrypt(plaintext, keyHex);
-    const dec = await CryptoWeb.AES.decrypt(enc.toString(), keyHex);
+    const dec = await CryptoWeb.AES.decrypt(enc.toString(), keyHex, { iv: enc.iv });
     assert.strictEqual(dec.toString(), plaintext);
   });
 
@@ -92,6 +92,18 @@ async function runCryptoWebTests() {
     const encObj = await CryptoWeb.AES.encrypt(plaintext, keyHex);
     const decObj = await CryptoWeb.AES.decrypt(encObj, keyHex);
     assert.strictEqual(decObj.toString(), plaintext);
+  });
+
+  // パスフレーズで暗号化・復号できるか
+  await runTest('AES passphrase encrypt/decrypt', async () => {
+    const plaintext = 'Secret Message';
+    const saltWA = CryptoJS.lib.WordArray.random(8);
+    const saltHex = saltWA.toString();
+    const encObj = await CryptoWeb.AES.encrypt(plaintext, 'secret key 123', { salt: saltHex });
+    const decObj = await CryptoWeb.AES.decrypt(encObj.toString(), 'secret key 123');
+    assert.strictEqual(decObj.toString(), plaintext);
+    const cryptoEnc = CryptoJS.AES.encrypt(plaintext, 'secret key 123', { salt: saltWA });
+    assert.strictEqual(encObj.toString(), cryptoEnc.toString());
   });
 }
 
@@ -107,11 +119,8 @@ async function runCompatibilityTests() {
   // CryptoWeb で暗号化し、CryptoJS で復号できるか
   await runTest('CryptoWeb encrypt / CryptoJS decrypt', async () => {
     const cwEnc = await CryptoWeb.AES.encrypt(plaintext, keyHex, { iv: ivHex });
-    const cwBytes = CryptoWeb.enc.Base64.parse(cwEnc.toString());
-    const cwIv = cwBytes.slice(0, 16);
-    const cwCt = cwBytes.slice(16);
-    const cwIvWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwIv));
-    const cwCtWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwCt));
+    const cwIvWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwEnc.iv));
+    const cwCtWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwEnc.ciphertext));
     const cryptoDec = CryptoJS.AES.decrypt(
       { ciphertext: cwCtWA },
       CryptoJS.enc.Hex.parse(keyHex),
@@ -128,16 +137,24 @@ async function runCompatibilityTests() {
       CryptoJS.enc.Hex.parse(keyHex),
       { iv: cwIvWA }
     );
-    const cryptoBytes = CryptoWeb.enc.Base64.parse(cryptoEnc.toString());
-    const cwIv = CryptoWeb.enc.Hex.parse(ivHex);
-    const combined = new Uint8Array(cwIv.length + cryptoBytes.length);
-    combined.set(cwIv);
-    combined.set(cryptoBytes, cwIv.length);
     const webDec = await CryptoWeb.AES.decrypt(
-      CryptoWeb.enc.Base64.stringify(combined),
-      keyHex
+      cryptoEnc.toString(),
+      keyHex,
+      { iv: ivHex }
     );
     assert.strictEqual(webDec.toString(), plaintext);
+  });
+
+  await runTest('Passphrase compatibility', async () => {
+    const saltWA = CryptoJS.lib.WordArray.random(8);
+    const saltHex = saltWA.toString();
+    const cryptoEnc = CryptoJS.AES.encrypt(plaintext, 'secret key 123', { salt: saltWA });
+    const webEnc = await CryptoWeb.AES.encrypt(plaintext, 'secret key 123', { salt: saltHex });
+    assert.strictEqual(webEnc.toString(), cryptoEnc.toString());
+    const webDec = await CryptoWeb.AES.decrypt(cryptoEnc.toString(), 'secret key 123');
+    assert.strictEqual(webDec.toString(), plaintext);
+    const cryptoDec = CryptoJS.AES.decrypt(webEnc.toString(), 'secret key 123');
+    assert.strictEqual(cryptoDec.toString(CryptoJS.enc.Utf8), plaintext);
   });
 }
 

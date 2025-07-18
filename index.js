@@ -97,6 +97,74 @@
     };
   }
 
+  /* internal MD5 implementation for OpenSSL key derivation */
+  function md5(bytes) {
+    if (nodeCrypto && nodeCrypto.createHash) {
+      return new Uint8Array(nodeCrypto.createHash('md5').update(Buffer.from(bytes)).digest());
+    }
+    const s = [7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,
+               5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,
+               4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,
+               6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21];
+    const K = [];
+    for (let i = 0; i < 64; i++) {
+      K[i] = Math.floor(Math.abs(Math.sin(i + 1)) * 0x100000000) >>> 0;
+    }
+    const len = bytes.length;
+    const bitLen = len * 8;
+    const withPadding = (((len + 8) >>> 6) + 1) * 64;
+    const buf = new Uint8Array(withPadding);
+    buf.set(bytes);
+    buf[len] = 0x80;
+    for (let i = 0; i < 8; i++) buf[withPadding - 8 + i] = (bitLen >>> (8 * i)) & 0xff;
+    let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
+    const view = new DataView(buf.buffer);
+    for (let i = 0; i < withPadding; i += 64) {
+      let A = a0, B = b0, C = c0, D = d0;
+      for (let j = 0; j < 64; j++) {
+        let F, g;
+        if (j < 16) { F = (B & C) | (~B & D); g = j; }
+        else if (j < 32) { F = (D & B) | (~D & C); g = (5 * j + 1) % 16; }
+        else if (j < 48) { F = B ^ C ^ D; g = (3 * j + 5) % 16; }
+        else { F = C ^ (B | ~D); g = (7 * j) % 16; }
+        const tmp = D;
+        D = C;
+        C = B;
+        F = (F + A + K[j] + view.getUint32(i + g * 4, true)) >>> 0;
+        B = (B + ((F << s[j]) | (F >>> (32 - s[j])))) >>> 0;
+        A = tmp;
+      }
+      a0 = (a0 + A) >>> 0;
+      b0 = (b0 + B) >>> 0;
+      c0 = (c0 + C) >>> 0;
+      d0 = (d0 + D) >>> 0;
+    }
+    const out = new Uint8Array(16);
+    new DataView(out.buffer).setUint32(0, a0, true);
+    new DataView(out.buffer).setUint32(4, b0, true);
+    new DataView(out.buffer).setUint32(8, c0, true);
+    new DataView(out.buffer).setUint32(12, d0, true);
+    return out;
+  }
+
+  function evpKDF(passBytes, saltBytes, keySize = 32, ivSize = 16) {
+    const total = keySize + ivSize;
+    let derived = new Uint8Array(0);
+    let block = new Uint8Array(0);
+    while (derived.length < total) {
+      const data = new Uint8Array(block.length + passBytes.length + saltBytes.length);
+      data.set(block);
+      data.set(passBytes, block.length);
+      data.set(saltBytes, block.length + passBytes.length);
+      block = md5(data);
+      const temp = new Uint8Array(derived.length + block.length);
+      temp.set(derived);
+      temp.set(block, derived.length);
+      derived = temp;
+    }
+    return { key: derived.slice(0, keySize), iv: derived.slice(keySize, total) };
+  }
+
   /* AES ------------------------------------------------------------------ */
   /**
    * AES-CBC encryption and decryption helpers.
@@ -115,24 +183,39 @@
      */
     encrypt: async function (plaintext, key, cfg = {}) {
       const ptBytes = typeof plaintext === 'string' ? enc.Utf8.parse(plaintext) : plaintext;
-      let keyBytes;
-      if (typeof key === 'string') keyBytes = enc.Hex.parse(key);
-      else if (key && key.words) keyBytes = key.words;
-      else keyBytes = key;
-      if (![16, 24, 32].includes(keyBytes.length)) throw new Error('Key length must be 128/192/256 bits');
+      let keyBytes, ivBytes, saltBytes, passphrase = false;
+      if (typeof key === 'string' && (!/^[0-9a-fA-F]+$/.test(key) || ![32,48,64].includes(key.length))) {
+        passphrase = true;
+        saltBytes = cfg.salt ? (typeof cfg.salt === 'string' ? enc.Hex.parse(cfg.salt) : cfg.salt) : getRandomBytes(8);
+        const derived = evpKDF(enc.Utf8.parse(key), saltBytes);
+        keyBytes = derived.key;
+        ivBytes = derived.iv;
+      } else {
+        if (typeof key === 'string') keyBytes = enc.Hex.parse(key);
+        else if (key && key.words) keyBytes = key.words;
+        else keyBytes = key;
+        if (![16, 24, 32].includes(keyBytes.length)) throw new Error('Key length must be 128/192/256 bits');
+        if (cfg.iv) ivBytes = typeof cfg.iv === 'string' ? enc.Hex.parse(cfg.iv) : cfg.iv;
+        else ivBytes = getRandomBytes(16);
+      }
       const cryptoKey = await subtle.importKey('raw', keyBytes, { name: 'AES-CBC', length: keyBytes.length * 8 }, false, ['encrypt']);
-      let ivBytes;
-      if (cfg.iv) ivBytes = typeof cfg.iv === 'string' ? enc.Hex.parse(cfg.iv) : cfg.iv;
-      else ivBytes = getRandomBytes(16);
       const cipherBuf = await subtle.encrypt({ name: 'AES-CBC', iv: ivBytes }, cryptoKey, ptBytes);
       const cipherBytes = new Uint8Array(cipherBuf);
-      const combined = new Uint8Array(ivBytes.length + cipherBytes.length);
-      combined.set(ivBytes);
-      combined.set(cipherBytes, ivBytes.length);
       return {
         iv: ivBytes,
+        salt: saltBytes,
         ciphertext: cipherBytes,
-        toString(encoder = enc.Base64) { return encoder.stringify(combined); }
+        toString(encoder = enc.Base64) {
+          if (passphrase) {
+            const prefix = enc.Utf8.parse('Salted__');
+            const all = new Uint8Array(prefix.length + saltBytes.length + cipherBytes.length);
+            all.set(prefix);
+            all.set(saltBytes, prefix.length);
+            all.set(cipherBytes, prefix.length + saltBytes.length);
+            return encoder.stringify(all);
+          }
+          return encoder.stringify(cipherBytes);
+        }
       };
     },
 
@@ -148,26 +231,41 @@
      *   Promise resolving to a CryptoJS compatible plaintext object.
      */
     decrypt: async function (ciphertext, key, cfg = {}) {
-      let ctBytes, ivBytes;
+      let ctBytes, ivBytes, saltBytes, passphrase = false, keyBytes;
       if (typeof ciphertext === 'string') {
         const all = enc.Base64.parse(ciphertext);
-        if (all.length < 17) throw new Error('ciphertext too short');
-        ivBytes = all.slice(0, 16);
-        ctBytes = all.slice(16);
+        if (all.length >= 16 && enc.Utf8.stringify(all.slice(0, 8)) === 'Salted__') {
+          saltBytes = all.slice(8, 16);
+          ctBytes = all.slice(16);
+        } else {
+          ctBytes = all;
+        }
       } else if (ciphertext && ciphertext.ciphertext) {
         ivBytes = ciphertext.iv;
         ctBytes = ciphertext.ciphertext;
+        saltBytes = ciphertext.salt;
       } else if (ciphertext && ciphertext.length) {
         ctBytes = ciphertext;
       } else {
         throw new Error('invalid ciphertext');
       }
-      if (cfg.iv) ivBytes = typeof cfg.iv === 'string' ? enc.Hex.parse(cfg.iv) : cfg.iv;
+
+      if (typeof key === 'string' && (!/^[0-9a-fA-F]+$/.test(key) || ![32,48,64].includes(key.length) || saltBytes)) {
+        passphrase = true;
+        if (!saltBytes) {
+          if (!cfg.salt) throw new Error('salt required');
+          saltBytes = typeof cfg.salt === 'string' ? enc.Hex.parse(cfg.salt) : cfg.salt;
+        }
+        const derived = evpKDF(enc.Utf8.parse(key), saltBytes);
+        keyBytes = derived.key;
+        ivBytes = derived.iv;
+      } else {
+        if (typeof key === 'string') keyBytes = enc.Hex.parse(key);
+        else if (key && key.words) keyBytes = key.words;
+        else keyBytes = key;
+        if (cfg.iv) ivBytes = typeof cfg.iv === 'string' ? enc.Hex.parse(cfg.iv) : cfg.iv;
+      }
       if (!ivBytes) throw new Error('IV required');
-      let keyBytes;
-      if (typeof key === 'string') keyBytes = enc.Hex.parse(key);
-      else if (key && key.words) keyBytes = key.words;
-      else keyBytes = key;
       const cryptoKey = await subtle.importKey('raw', keyBytes, { name: 'AES-CBC', length: keyBytes.length * 8 }, false, ['decrypt']);
       const plainBuf = await subtle.decrypt({ name: 'AES-CBC', iv: ivBytes }, cryptoKey, ctBytes);
       const plainBytes = new Uint8Array(plainBuf);
