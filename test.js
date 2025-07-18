@@ -1,7 +1,10 @@
+// このスクリプトでは CryptoWeb ラッパーの動作を確認するテストを実行します。
 const assert = require('assert');
 const CryptoJS = require('crypto-js');
+// index.js で公開されているモジュールを読み込む
 const CryptoWeb = require('./index');
 
+// 個々のテストを実行し、結果を表示するユーティリティ関数
 async function runTest(name, fn) {
   try {
     await fn();
@@ -12,12 +15,15 @@ async function runTest(name, fn) {
   }
 }
 
+// CryptoWeb 単体の機能が期待通り動作するか確認するテスト群
 async function runCryptoWebTests() {
+  // UTF-8 エンコード・デコードのテスト
   await runTest('Utf8 encode/decode', () => {
     const utf8Bytes = CryptoWeb.enc.Utf8.parse('hello');
     assert.strictEqual(CryptoWeb.enc.Utf8.stringify(utf8Bytes), 'hello');
   });
 
+  // 16進表現でのエンコード・デコードのテスト
   await runTest('Hex encode/decode', () => {
     const utf8Bytes = CryptoWeb.enc.Utf8.parse('hello');
     const hexStr = CryptoWeb.enc.Hex.stringify(utf8Bytes);
@@ -28,6 +34,7 @@ async function runCryptoWebTests() {
     );
   });
 
+  // Base64 エンコード・デコードのテスト
   await runTest('Base64 encode/decode', () => {
     const utf8Bytes = CryptoWeb.enc.Utf8.parse('hello');
     const b64Str = CryptoWeb.enc.Base64.stringify(utf8Bytes);
@@ -38,6 +45,7 @@ async function runCryptoWebTests() {
     );
   });
 
+  // SHA256 ハッシュの計算が CryptoJS と一致するか
   await runTest('SHA256 hash', async () => {
     const msg = 'Hello World';
     const hashW = await CryptoWeb.SHA256(msg);
@@ -46,6 +54,7 @@ async function runCryptoWebTests() {
   });
 
   let keyWrapper;
+  // PBKDF2 で生成した鍵が CryptoJS と同じになるか
   await runTest('PBKDF2', async () => {
     const keySize = 8; // 8 words = 256 bits
     const iterations = 1000;
@@ -61,6 +70,7 @@ async function runCryptoWebTests() {
     assert.strictEqual(keyWrapper.toString(), keyCryptoJS);
   });
 
+  // 文字列を AES で暗号化・復号するテスト
   await runTest('AES encrypt/decrypt string', async () => {
     const keyHex = keyWrapper.toString();
     const plaintext = 'Secret Message';
@@ -69,6 +79,7 @@ async function runCryptoWebTests() {
     assert.strictEqual(dec.toString(), plaintext);
   });
 
+  // 暗号化結果のオブジェクトを直接復号するテスト
   await runTest('AES encrypt/decrypt object', async () => {
     const keyHex = keyWrapper.toString();
     const plaintext = 'Secret Message';
@@ -78,6 +89,7 @@ async function runCryptoWebTests() {
   });
 }
 
+// CryptoWeb と CryptoJS で相互に暗号化・復号できるかを確認する互換性テスト
 async function runCompatibilityTests() {
   const keySize = 8;
   const iterations = 1000;
@@ -86,6 +98,7 @@ async function runCompatibilityTests() {
   ).toString();
   const plaintext = 'Secret Message';
   const ivHex = '000102030405060708090a0b0c0d0e0f';
+  // CryptoWeb で暗号化し、CryptoJS で復号できるか
   await runTest('CryptoWeb encrypt / CryptoJS decrypt', async () => {
     const cwEnc = await CryptoWeb.AES.encrypt(plaintext, keyHex, { iv: ivHex });
     const cwBytes = CryptoWeb.enc.Base64.parse(cwEnc.toString());
@@ -101,6 +114,7 @@ async function runCompatibilityTests() {
     assert.strictEqual(cryptoDec.toString(CryptoJS.enc.Utf8), plaintext);
   });
 
+  // CryptoJS で暗号化したものを CryptoWeb で復号できるか
   await runTest('CryptoJS encrypt / CryptoWeb decrypt', async () => {
     const cwIvWA = CryptoJS.enc.Hex.parse(ivHex);
     const cryptoEnc = CryptoJS.AES.encrypt(
@@ -121,6 +135,7 @@ async function runCompatibilityTests() {
   });
 }
 
+// スクリプトを直接実行したときにテストを順番に実行する
 (async () => {
   try {
     await runCryptoWebTests();
