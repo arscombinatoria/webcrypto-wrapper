@@ -53,6 +53,7 @@ async function runCryptoWebTests() {
     assert.strictEqual(hashW.toString(), hashC);
   });
 
+  // PBKDF2 のデフォルト設定で生成した鍵が CryptoJS と一致するか
   await runTest('PBKDF2 default options', async () => {
     const keyW = await CryptoWeb.PBKDF2('password', 'salt');
     const keyC = CryptoJS.PBKDF2('password', 'salt').toString();
@@ -145,6 +146,7 @@ async function runCompatibilityTests() {
     assert.strictEqual(webDec.toString(), plaintext);
   });
 
+  // CryptoWeb と CryptoJS 間でパスフレーズ暗号化が互換であるか
   await runTest('Passphrase compatibility', async () => {
     const saltWA = CryptoJS.lib.WordArray.random(8);
     const saltHex = saltWA.toString();
