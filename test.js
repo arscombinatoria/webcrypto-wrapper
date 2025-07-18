@@ -45,6 +45,12 @@ async function runCryptoWebTests() {
     assert.strictEqual(hashW.toString(), hashC);
   });
 
+  await runTest('PBKDF2 default options', async () => {
+    const keyW = await CryptoWeb.PBKDF2('password', 'salt');
+    const keyC = CryptoJS.PBKDF2('password', 'salt').toString();
+    assert.strictEqual(keyW.toString(), keyC);
+  });
+
   let keyWrapper;
   await runTest('PBKDF2', async () => {
     const keySize = 8; // 8 words = 256 bits

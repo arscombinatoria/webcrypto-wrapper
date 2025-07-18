@@ -54,7 +54,7 @@
 
   /* PBKDF2 --------------------------------------------------------------- */
   async function PBKDF2(password, salt, cfg = {}) {
-    const { iterations = 1000, keySize = 256 / 32, hash = 'SHA-256' } = cfg;
+    const { iterations = 250000, keySize = 128 / 32, hash = 'SHA-256' } = cfg;
     const passBytes = typeof password === 'string' ? enc.Utf8.parse(password) : password;
     const saltBytes = typeof salt === 'string' ? enc.Utf8.parse(salt) : salt;
     const baseKey = await subtle.importKey('raw', passBytes, 'PBKDF2', false, ['deriveBits']);
