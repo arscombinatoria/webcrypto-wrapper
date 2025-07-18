@@ -1,3 +1,11 @@
+/**
+ * WebCryptoWrapper
+ *
+ * A small wrapper around the Web Crypto API and Node.js crypto module.
+ * Provides CryptoJS compatible helpers for encoding, PBKDF2, AES-CBC and
+ * SHA-256 operations.
+ * @namespace CryptoWeb
+ */
 (function (root, factory) {
   if (typeof module === 'object' && module.exports) {
     module.exports = factory();
@@ -16,6 +24,12 @@
   }
   const subtle = webcrypto.subtle;
 
+  /**
+   * Generate cryptographically secure random bytes.
+   *
+   * @param {number} len - Number of bytes to generate.
+   * @returns {Uint8Array} Random bytes.
+   */
   function getRandomBytes(len) {
     if (webcrypto.getRandomValues) {
       return webcrypto.getRandomValues(new Uint8Array(len));
@@ -27,6 +41,10 @@
   }
 
   /* enc helpers ---------------------------------------------------------- */
+  /**
+   * Encoding helper functions equivalent to `CryptoJS.enc.*` namespaces.
+   * @namespace
+   */
   const enc = {
     Utf8: {
       parse: (str) => new TextEncoder().encode(str),
@@ -53,6 +71,18 @@
   };
 
   /* PBKDF2 --------------------------------------------------------------- */
+  /**
+   * Derive a key using PBKDF2.
+   *
+   * @param {string|Uint8Array} password - Password or byte array.
+   * @param {string|Uint8Array} salt - Salt value.
+   * @param {Object} [cfg] - Configuration options.
+   * @param {number} [cfg.iterations=1000] - Number of iterations.
+   * @param {number} [cfg.keySize=8] - Desired key size in words (32-bit units).
+   * @param {string} [cfg.hash='SHA-256'] - Hash algorithm name.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible word array object.
+   */
   async function PBKDF2(password, salt, cfg = {}) {
     const { iterations = 1000, keySize = 256 / 32, hash = 'SHA-256' } = cfg;
     const passBytes = typeof password === 'string' ? enc.Utf8.parse(password) : password;
@@ -68,7 +98,21 @@
   }
 
   /* AES ------------------------------------------------------------------ */
+  /**
+   * AES-CBC encryption and decryption helpers.
+   * @namespace
+   */
   const AES = {
+    /**
+     * Encrypt data using AES-CBC.
+     *
+     * @param {string|Uint8Array} plaintext - Data to encrypt.
+     * @param {string|Uint8Array|Object} key - Hex string, key bytes or PBKDF2 output.
+     * @param {Object} [cfg] - Optional configuration.
+     * @param {string|Uint8Array} [cfg.iv] - Initialization vector. Randomly generated if omitted.
+     * @returns {Promise<{iv: Uint8Array, ciphertext: Uint8Array, toString: function}>}
+     *   Promise resolving to an object containing IV and ciphertext.
+     */
     encrypt: async function (plaintext, key, cfg = {}) {
       const ptBytes = typeof plaintext === 'string' ? enc.Utf8.parse(plaintext) : plaintext;
       let keyBytes;
@@ -92,6 +136,17 @@
       };
     },
 
+    /**
+     * Decrypt data that was encrypted with AES-CBC.
+     *
+     * @param {string|Uint8Array|Object} ciphertext - Base64 string, byte array or
+     *     object containing `ciphertext` and `iv`.
+     * @param {string|Uint8Array|Object} key - Hex string, key bytes or PBKDF2 output.
+     * @param {Object} [cfg] - Optional configuration.
+     * @param {string|Uint8Array} [cfg.iv] - Initialization vector, overrides embedded IV.
+     * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+     *   Promise resolving to a CryptoJS compatible plaintext object.
+     */
     decrypt: async function (ciphertext, key, cfg = {}) {
       let ctBytes, ivBytes;
       if (typeof ciphertext === 'string') {
@@ -125,6 +180,13 @@
   };
 
   /* SHA-256 -------------------------------------------------------------- */
+  /**
+   * Compute SHA-256 digest of data.
+   *
+   * @param {string|Uint8Array} data - Data to hash.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible hash object.
+   */
   async function SHA256(data) {
     const bytes = typeof data === 'string' ? enc.Utf8.parse(data) : data;
     const digest = await subtle.digest('SHA-256', bytes);
@@ -136,5 +198,9 @@
     };
   }
 
+  /**
+   * Exposed API providing encoding utilities and cryptographic functions.
+   * @type {{enc: object, PBKDF2: Function, AES: object, SHA256: Function}}
+   */
   return { enc, PBKDF2, AES, SHA256 };
 }));
