@@ -53,6 +53,12 @@ async function runCryptoWebTests() {
     assert.strictEqual(hashW.toString(), hashC);
   });
 
+  await runTest('PBKDF2 default options', async () => {
+    const keyW = await CryptoWeb.PBKDF2('password', 'salt');
+    const keyC = CryptoJS.PBKDF2('password', 'salt').toString();
+    assert.strictEqual(keyW.toString(), keyC);
+  });
+
   let keyWrapper;
   // PBKDF2 で生成した鍵が CryptoJS と同じになるか
   await runTest('PBKDF2', async () => {
