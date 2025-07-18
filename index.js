@@ -97,7 +97,14 @@
     };
   }
 
-  /* internal MD5 implementation for OpenSSL key derivation */
+  /**
+   * Compute MD5 digest of the given data.
+   * Used internally for OpenSSL style key derivation.
+   *
+   * @private
+   * @param {Uint8Array} bytes - Input bytes.
+   * @returns {Uint8Array} The MD5 hash as bytes.
+   */
   function md5(bytes) {
     if (nodeCrypto && nodeCrypto.createHash) {
       return new Uint8Array(nodeCrypto.createHash('md5').update(Buffer.from(bytes)).digest());
@@ -147,6 +154,16 @@
     return out;
   }
 
+  /**
+   * Derive key and IV using an OpenSSL-compatible EVP algorithm.
+   *
+   * @private
+   * @param {Uint8Array} passBytes - Password bytes.
+   * @param {Uint8Array} saltBytes - Salt bytes.
+   * @param {number} [keySize=32] - Length of the derived key in bytes.
+   * @param {number} [ivSize=16] - Length of the derived IV in bytes.
+   * @returns {{key: Uint8Array, iv: Uint8Array}} Derived key and IV.
+   */
   function evpKDF(passBytes, saltBytes, keySize = 32, ivSize = 16) {
     const total = keySize + ivSize;
     let derived = new Uint8Array(0);
