@@ -50,6 +50,8 @@ const CryptoWeb = require('./index');
   // SHA-256 など各種ハッシュ
   const hash = await CryptoWeb.SHA256('message');
   console.log(hash.toString());
+  const md5 = await CryptoWeb.MD5('message');
+  console.log(md5.toString());
 })();
 ```
 
@@ -60,6 +62,7 @@ const CryptoWeb = require('./index');
 - `AES.encrypt(data, key, options)` — AES-CBC による暗号化
 - `AES.decrypt(ciphertext, key, options)` — AES-CBC による復号
 - `SHA1(data)`, `SHA256(data)`, `SHA384(data)`, `SHA512(data)` — 各種 SHA ハッシュ計算
+- `MD5(data)` — MD5 ハッシュ計算
 
 各関数は Promise を返し、戻り値は `toString()` メソッドを持つ CryptoJS 互換の
 オブジェクトです。

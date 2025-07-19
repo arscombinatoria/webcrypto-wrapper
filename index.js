@@ -364,9 +364,31 @@
   }
 
   /**
+   * Compute MD5 digest of data.
+   * @param {string|Uint8Array} data - Data to hash.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible hash object.
+   */
+  async function MD5(data) {
+    const bytes = typeof data === 'string' ? enc.Utf8.parse(data) : data;
+    let res;
+    if (nodeCrypto && nodeCrypto.createHash) {
+      res = new Uint8Array(nodeCrypto.createHash('md5').update(Buffer.from(bytes)).digest());
+    } else {
+      res = md5(bytes);
+    }
+    return {
+      words: res,
+      sigBytes: res.length,
+      toString(encoder = enc.Hex) { return encoder.stringify(res); }
+    };
+  }
+
+  /**
    * Exposed API providing encoding utilities and cryptographic functions.
    * @type {{enc: object, PBKDF2: Function, AES: object,
+   *         MD5: Function,
    *         SHA1: Function, SHA256: Function, SHA384: Function, SHA512: Function}}
    */
-  return { enc, PBKDF2, AES, SHA1, SHA256, SHA384, SHA512 };
+  return { enc, PBKDF2, AES, MD5, SHA1, SHA256, SHA384, SHA512 };
 }));

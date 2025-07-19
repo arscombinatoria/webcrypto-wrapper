@@ -77,6 +77,14 @@ async function runCryptoWebTests() {
     assert.strictEqual(hashW.toString(), hashC);
   });
 
+  // MD5 ハッシュの計算が CryptoJS と一致するか
+  await runTest('MD5 hash', async () => {
+    const msg = 'Hello World';
+    const hashW = await CryptoWeb.MD5(msg);
+    const hashC = CryptoJS.MD5(msg).toString();
+    assert.strictEqual(hashW.toString(), hashC);
+  });
+
   // PBKDF2 のデフォルト設定で生成した鍵が CryptoJS と一致するか
   await runTest('PBKDF2 default options', async () => {
     const keyW = await CryptoWeb.PBKDF2('password', 'salt');
