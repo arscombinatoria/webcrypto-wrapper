@@ -42,6 +42,8 @@ const CryptoWeb = require('./index');
   // SHA-256 and other hash functions
   const hash = await CryptoWeb.SHA256('message');
   console.log(hash.toString());
+  const md5 = await CryptoWeb.MD5('message');
+  console.log(md5.toString());
 })();
 ```
 
@@ -52,6 +54,7 @@ const CryptoWeb = require('./index');
 - `AES.encrypt(data, key, options)` — AES-CBC encryption
 - `AES.decrypt(ciphertext, key, options)` — AES-CBC decryption
 - `SHA1(data)`, `SHA256(data)`, `SHA384(data)`, `SHA512(data)` — SHA hash calculations
+- `MD5(data)` — MD5 hash calculation
 
 Each function returns a Promise and the result is a CryptoJS compatible object with a `toString()` method.
 
