@@ -3,7 +3,7 @@
  *
  * A small wrapper around the Web Crypto API and Node.js crypto module.
  * Provides CryptoJS compatible helpers for encoding, PBKDF2, AES-CBC and
- * SHA-256 operations.
+ * SHA-1/256/384/512 hash operations.
  * @namespace CryptoWeb
  */
 (function (root, factory) {
@@ -294,10 +294,26 @@
     }
   };
 
-  /* SHA-256 -------------------------------------------------------------- */
+  /* SHA hashes ----------------------------------------------------------- */
+  /**
+   * Compute SHA-1 digest of data.
+   * @param {string|Uint8Array} data - Data to hash.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible hash object.
+   */
+  async function SHA1(data) {
+    const bytes = typeof data === 'string' ? enc.Utf8.parse(data) : data;
+    const digest = await subtle.digest('SHA-1', bytes);
+    const res = new Uint8Array(digest);
+    return {
+      words: res,
+      sigBytes: res.length,
+      toString(encoder = enc.Hex) { return encoder.stringify(res); }
+    };
+  }
+
   /**
    * Compute SHA-256 digest of data.
-   *
    * @param {string|Uint8Array} data - Data to hash.
    * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
    *   Promise resolving to a CryptoJS compatible hash object.
@@ -314,8 +330,43 @@
   }
 
   /**
-   * Exposed API providing encoding utilities and cryptographic functions.
-   * @type {{enc: object, PBKDF2: Function, AES: object, SHA256: Function}}
+   * Compute SHA-384 digest of data.
+   * @param {string|Uint8Array} data - Data to hash.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible hash object.
    */
-  return { enc, PBKDF2, AES, SHA256 };
+  async function SHA384(data) {
+    const bytes = typeof data === 'string' ? enc.Utf8.parse(data) : data;
+    const digest = await subtle.digest('SHA-384', bytes);
+    const res = new Uint8Array(digest);
+    return {
+      words: res,
+      sigBytes: res.length,
+      toString(encoder = enc.Hex) { return encoder.stringify(res); }
+    };
+  }
+
+  /**
+   * Compute SHA-512 digest of data.
+   * @param {string|Uint8Array} data - Data to hash.
+   * @returns {Promise<{words: Uint8Array, sigBytes: number, toString: function}>}
+   *   Promise resolving to a CryptoJS compatible hash object.
+   */
+  async function SHA512(data) {
+    const bytes = typeof data === 'string' ? enc.Utf8.parse(data) : data;
+    const digest = await subtle.digest('SHA-512', bytes);
+    const res = new Uint8Array(digest);
+    return {
+      words: res,
+      sigBytes: res.length,
+      toString(encoder = enc.Hex) { return encoder.stringify(res); }
+    };
+  }
+
+  /**
+   * Exposed API providing encoding utilities and cryptographic functions.
+   * @type {{enc: object, PBKDF2: Function, AES: object,
+   *         SHA1: Function, SHA256: Function, SHA384: Function, SHA512: Function}}
+   */
+  return { enc, PBKDF2, AES, SHA1, SHA256, SHA384, SHA512 };
 }));
