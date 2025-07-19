@@ -1,5 +1,7 @@
 # WebCryptoWrapper
 
+英語版READMEは [README_en.md](./README_en.md) を参照してください。
+
 WebCryptoWrapper は、ブラウザの **Web Crypto API** と Node.js の `crypto.webcrypto` を
 統一的に扱える軽量ラッパーです。暗号アルゴリズムの呼び出し方法や入出力を
 [crypto-js](https://github.com/brix/crypto-js) 互換に揃えているため、既存の
