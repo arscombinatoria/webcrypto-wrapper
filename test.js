@@ -53,6 +53,30 @@ async function runCryptoWebTests() {
     assert.strictEqual(hashW.toString(), hashC);
   });
 
+  // SHA1 ハッシュの計算が CryptoJS と一致するか
+  await runTest('SHA1 hash', async () => {
+    const msg = 'Hello World';
+    const hashW = await CryptoWeb.SHA1(msg);
+    const hashC = CryptoJS.SHA1(msg).toString();
+    assert.strictEqual(hashW.toString(), hashC);
+  });
+
+  // SHA384 ハッシュの計算が CryptoJS と一致するか
+  await runTest('SHA384 hash', async () => {
+    const msg = 'Hello World';
+    const hashW = await CryptoWeb.SHA384(msg);
+    const hashC = CryptoJS.SHA384(msg).toString();
+    assert.strictEqual(hashW.toString(), hashC);
+  });
+
+  // SHA512 ハッシュの計算が CryptoJS と一致するか
+  await runTest('SHA512 hash', async () => {
+    const msg = 'Hello World';
+    const hashW = await CryptoWeb.SHA512(msg);
+    const hashC = CryptoJS.SHA512(msg).toString();
+    assert.strictEqual(hashW.toString(), hashC);
+  });
+
   // PBKDF2 のデフォルト設定で生成した鍵が CryptoJS と一致するか
   await runTest('PBKDF2 default options', async () => {
     const keyW = await CryptoWeb.PBKDF2('password', 'salt');

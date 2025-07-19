@@ -47,7 +47,7 @@ const CryptoWeb = require('./index');
   const pwDec = await CryptoWeb.AES.decrypt(pwEnc.toString(), 'secret key 123');
   console.log(pwDec.toString());
 
-  // SHA-256
+  // SHA-256 など各種ハッシュ
   const hash = await CryptoWeb.SHA256('message');
   console.log(hash.toString());
 })();
@@ -59,7 +59,7 @@ const CryptoWeb = require('./index');
 - `PBKDF2(password, salt, options)` — WebCrypto の PBKDF2 を使った鍵導出
 - `AES.encrypt(data, key, options)` — AES-CBC による暗号化
 - `AES.decrypt(ciphertext, key, options)` — AES-CBC による復号
-- `SHA256(data)` — SHA-256 ハッシュ計算
+- `SHA1(data)`, `SHA256(data)`, `SHA384(data)`, `SHA512(data)` — 各種 SHA ハッシュ計算
 
 各関数は Promise を返し、戻り値は `toString()` メソッドを持つ CryptoJS 互換の
 オブジェクトです。

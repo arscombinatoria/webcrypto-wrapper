@@ -39,7 +39,7 @@ const CryptoWeb = require('./index');
   const pwDec = await CryptoWeb.AES.decrypt(pwEnc.toString(), 'secret key 123');
   console.log(pwDec.toString());
 
-  // SHA-256
+  // SHA-256 and other hash functions
   const hash = await CryptoWeb.SHA256('message');
   console.log(hash.toString());
 })();
@@ -51,7 +51,7 @@ const CryptoWeb = require('./index');
 - `PBKDF2(password, salt, options)` — key derivation using WebCrypto's PBKDF2
 - `AES.encrypt(data, key, options)` — AES-CBC encryption
 - `AES.decrypt(ciphertext, key, options)` — AES-CBC decryption
-- `SHA256(data)` — SHA-256 hash calculation
+- `SHA1(data)`, `SHA256(data)`, `SHA384(data)`, `SHA512(data)` — SHA hash calculations
 
 Each function returns a Promise and the result is a CryptoJS compatible object with a `toString()` method.
 
