@@ -67,6 +67,16 @@ const CryptoWeb = require('./index');
 各関数は Promise を返し、戻り値は `toString()` メソッドを持つ CryptoJS 互換の
 オブジェクトです。
 
+## ベンチマーク
+
+`benchmarks/benchmark.js` を実行して WebCryptoWrapper と crypto-js の速度を
+比較しました（Node.js 20、1MiB のデータを 10 回計測した平均）。
+
+| 操作 | CryptoWeb | crypto-js | 差 |
+|------|-----------|-----------|----|
+| AES.encrypt | 3.54ms/op | 49.89ms/op | 14x |
+| SHA256 | 2.89ms/op | 34.70ms/op | 12x |
+
 ## テスト
 
 リポジトリには簡単な動作確認用テストが含まれています。依存モジュールを

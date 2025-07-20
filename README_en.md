@@ -58,6 +58,15 @@ const CryptoWeb = require('./index');
 
 Each function returns a Promise and the result is a CryptoJS compatible object with a `toString()` method.
 
+## Benchmark
+
+Run `benchmarks/benchmark.js` to compare performance with crypto-js (Node.js 20, averaging 10 runs on 1MiB data).
+
+| Operation | CryptoWeb | crypto-js | Difference |
+|-----------|-----------|-----------|------------|
+| AES.encrypt | 3.54ms/op | 49.89ms/op | 14x |
+| SHA256 | 2.89ms/op | 34.70ms/op | 12x |
+
 ## Test
 
 Simple tests are included in the repository. After installing dependencies, run:
