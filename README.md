@@ -77,6 +77,18 @@ npm install
 npm test
 ```
 
+## ベンチマーク
+
+<!-- BENCHMARK:START -->
+| test | ops/sec |
+| --- | ---: |
+| CryptoWeb#SHA256 | 15612 |
+| CryptoJS #SHA256 | 275696 |
+| CryptoWeb#AES-encrypt | 9928 |
+| CryptoJS #AES-encrypt | 17810 |
+
+<!-- BENCHMARK:END -->
+
 ## ライセンス
 
 [ISC License](./LICENSE) の下で公開されています。

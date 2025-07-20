@@ -1,0 +1,40 @@
+name: benchmark
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'bench/**'
+
+jobs:
+  perf:
+    runs-on: ubuntu-latest
+    concurrency: benchmark-${{ github.head_ref }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: node bench/bench.js
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'benchmarkjs'
+          output-file-path: bench-result.json
+          comment-on-alert: true
+      - name: Update README section
+        run: |
+          node <<'SCRIPT'
+          const fs = require('fs');
+          const readme = fs.readFileSync('README.md', 'utf8');
+          const table = fs.readFileSync('bench-table.md', 'utf8');
+          const updated = readme.replace(/<!-- BENCHMARK:START -->[^]*?<!-- BENCHMARK:END -->/, `<!-- BENCHMARK:START -->\n${table}\n<!-- BENCHMARK:END -->`);
+          fs.writeFileSync('README.md', updated);
+          const en = fs.readFileSync('README_en.md', 'utf8');
+          const enUpdated = en.replace(/<!-- BENCHMARK:START -->[^]*?<!-- BENCHMARK:END -->/, `<!-- BENCHMARK:START -->\n${table}\n<!-- BENCHMARK:END -->`);
+          fs.writeFileSync('README_en.md', enUpdated);
+          SCRIPT
+      - uses: EndBug/add-and-commit@v9
+        with:
+          message: 'chore: update benchmark table'
+          add: 'README.md README_en.md'
