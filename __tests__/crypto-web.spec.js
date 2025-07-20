@@ -188,3 +188,130 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
     expect(cjDecPw.toString(CryptoJS.enc.Utf8)).toBe('hello');
   });
 });
+
+// Additional tests for edge cases and fallbacks
+
+describe.each(envs)('Additional CryptoWeb cases in %s', (name, getCrypto) => {
+  const origCrypto = global.crypto;
+
+  beforeAll(() => {
+    global.crypto = getCrypto();
+  });
+
+  afterAll(() => {
+    global.crypto = origCrypto;
+    jest.restoreAllMocks();
+  });
+
+  test('getRandomValues instance reused for IV', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const wc = require('node:crypto').webcrypto;
+    const spy = jest.spyOn(wc, 'getRandomValues').mockImplementation(arr => { arr.fill(0xAA); return arr; });
+    const enc = await CryptoWeb.AES.encrypt('hello', key);
+    const passed = spy.mock.calls[0][0];
+    expect(enc.iv).toBe(passed);
+    expect(spy.mock.results[0].value).toBe(passed);
+    spy.mockRestore();
+  });
+
+  test('Base64.parse throws on invalid input', () => {
+    expect(() => CryptoWeb.enc.Base64.parse('$!')).toThrow();
+  });
+
+  test('AES empty string round trip', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    const enc = await CryptoWeb.AES.encrypt('', key, { iv });
+    expect(enc.ciphertext.length).toBe(16);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.toString()).toBe('');
+  });
+
+  test('AES auto IV round trip', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const enc = await CryptoWeb.AES.encrypt('x', key);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.toString()).toBe('x');
+  });
+
+  test('AES decrypt with wrong key or IV fails', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const badKey = '112233445566778899aabbccddeeff00';
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    const enc = await CryptoWeb.AES.encrypt('data', key, { iv });
+    await expect(CryptoWeb.AES.decrypt(enc, badKey)).rejects.toThrow();
+    await expect(CryptoWeb.AES.decrypt({ ciphertext: enc.ciphertext, iv: 'ffeeddccbbaa99887766554433221100' }, key)).rejects.toThrow();
+  });
+
+  test('UTF-8 surrogate pair encryption', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const str = '😀'.repeat(5);
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    const enc = await CryptoWeb.AES.encrypt(str, key, { iv });
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.toString()).toBe(str);
+  });
+
+  test('PBKDF2 SHA-512 vector', async () => {
+    const res = await CryptoWeb.PBKDF2('password', 'salt', { iterations: 1, keySize: 20 / 4, hash: 'SHA-512' });
+    expect(res.toString()).toBe('867f70cf1ade02cff3752599a3a53dc4af34c7a6');
+  });
+
+  test('PBKDF2 Uint8Array input', async () => {
+    const pass = CryptoWeb.enc.Utf8.parse('pass');
+    const salt = CryptoWeb.enc.Utf8.parse('salt');
+    const res = await CryptoWeb.PBKDF2(pass, salt, { iterations: 1, keySize: 4 });
+    expect(res.words instanceof Uint8Array).toBe(true);
+  });
+
+  test('PBKDF2 invalid iterations rejects', async () => {
+    await expect(CryptoWeb.PBKDF2('p', 's', { iterations: 0 })).rejects.toThrow();
+  });
+
+  test('PBKDF2 zero keySize returns empty', async () => {
+    const res = await CryptoWeb.PBKDF2('p', 's', { iterations: 1, keySize: 0 });
+    expect(res.words.length).toBe(0);
+  });
+
+  test('AES 1MiB round trip', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const data = new Uint8Array(1 << 20).fill(0);
+    const enc = await CryptoWeb.AES.encrypt(data, key);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.words.length).toBe(data.length);
+  });
+});
+
+// Tests requiring module isolation
+
+test('randomBytes fallback when getRandomValues missing', async () => {
+  jest.resetModules();
+  const crypto = require('node:crypto');
+  const orig = crypto.webcrypto.getRandomValues;
+  crypto.webcrypto.getRandomValues = undefined;
+  global.crypto = crypto.webcrypto;
+  const spy = jest.spyOn(crypto, 'randomBytes');
+  let CW;
+  jest.isolateModules(() => {
+    CW = require('../src');
+  });
+  await CW.AES.encrypt('x', '00112233445566778899aabbccddeeff');
+  expect(spy).toHaveBeenCalled();
+  spy.mockRestore();
+  crypto.webcrypto.getRandomValues = orig;
+  global.crypto = nodeCrypto;
+});
+
+test('MD5 JavaScript fallback', async () => {
+  jest.resetModules();
+  const crypto = require('node:crypto');
+  const orig = crypto.createHash;
+  delete crypto.createHash;
+  let CW;
+  jest.isolateModules(() => {
+    CW = require('../src');
+  });
+  const h = await CW.MD5('abc');
+  expect(h.toString().length).toBe(32);
+  crypto.createHash = orig;
+});
