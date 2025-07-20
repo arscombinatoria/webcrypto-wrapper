@@ -69,13 +69,18 @@ const CryptoWeb = require('./index');
 
 ## ベンチマーク
 
-`benchmarks/benchmark.js` を実行して WebCryptoWrapper と crypto-js の速度を
-比較しました（Node.js 20、1MiB のデータを 10 回計測した平均）。
-
-| 操作 | CryptoWeb | crypto-js | 差 |
-|------|-----------|-----------|----|
-| AES.encrypt | 3.54ms/op | 49.89ms/op | 14x |
-| SHA256 | 2.89ms/op | 34.70ms/op | 12x |
+<!-- BENCHMARK:START -->
+| API | CryptoWeb ops/s | CryptoJS ops/s | diff |
+|-----|----------------|---------------|------|
+| PBKDF2 | **1318.83** | 103.29 | 1277% |
+| AES.encrypt | 7285.94 | **20250.87** | 278% |
+| AES.decrypt | 4196.91 | **11779.76** | 281% |
+| MD5 | **309057.59** | 202204.06 | 153% |
+| SHA1 | 25837.22 | **250508.81** | 970% |
+| SHA256 | 15411.76 | **268868.91** | 1745% |
+| SHA384 | 16611.51 | **53921.95** | 325% |
+| SHA512 | 24458.91 | **55398.68** | 226% |
+<!-- BENCHMARK:END -->
 
 ## テスト
 

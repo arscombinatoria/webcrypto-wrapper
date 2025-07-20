@@ -1,16 +1,37 @@
-name: Benchmark
+name: benchmark
 
 on:
   push:
-    branches: ["**"]
+    branches: [main, dev, feature/**]
+  pull_request:
+    paths: ['src/**', 'bench/**']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: benchmark-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  benchmark:
+  bench:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - run: npm install
-      - run: node benchmarks/benchmark.js
+          node-version: 20
+          cache: 'npm'
+      - run: npm ci
+      - run: node bench/bench.js
+      - uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'benchmarkjs'
+          output-file-path: bench-result.json
+          comment-on-alert: true
+      - run: node scripts/inject-table.js
+      - uses: EndBug/add-and-commit@v9
+        with:
+          add: 'README.md'
+          message: 'chore: update benchmark table'
+          default_author: github_actions
