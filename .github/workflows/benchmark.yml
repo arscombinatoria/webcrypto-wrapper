@@ -22,6 +22,7 @@ jobs:
           tool: 'benchmarkjs'
           output-file-path: bench-result.json
           comment-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Update README section
         run: |
           node <<'SCRIPT'
