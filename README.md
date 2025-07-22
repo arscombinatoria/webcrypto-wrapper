@@ -22,6 +22,17 @@ npm install webcryptowrapper
 ブラウザで利用する場合は `index.js` をスクリプトとして読み込むだけで
 `window.CryptoWeb` として使用できます。
 
+```html
+<!-- example -->
+<script src="./node_modules/webcryptowrapper/src/index.js"></script>
+<script>
+  (async () => {
+    const enc = await CryptoWeb.AES.encrypt('hello', 'secret key 123');
+    console.log(enc.toString());
+  })();
+</script>
+```
+
 ## 使い方
 
 ```javascript
