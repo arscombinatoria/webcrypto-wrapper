@@ -1,5 +1,7 @@
 # WebCryptoWrapper
 
+![coverage](./coverage/badges.svg)
+
 英語版READMEは [README_en.md](./README_en.md) を参照してください。
 
 WebCryptoWrapper は、ブラウザの **Web Crypto API** と Node.js の `crypto.webcrypto` を

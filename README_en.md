@@ -1,5 +1,7 @@
 # WebCryptoWrapper
 
+![coverage](./coverage/badges.svg)
+
 WebCryptoWrapper is a lightweight wrapper that provides a consistent interface for the browser **Web Crypto API** and Node.js `crypto.webcrypto`. It aligns the invocation style and input/output with [crypto-js](https://github.com/brix/crypto-js) so that existing CryptoJS-based code can be reused with minimal changes.
 
 When AES encryption is performed with a passphrase, it returns a CryptoJS-formatted string beginning with "Salted__". When a 16–32 byte key is specified directly, the IV is prepended to the ciphertext so that decryption can be performed from the string alone.
