@@ -83,4 +83,22 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
     const dec = await CryptoWeb.AES.decrypt(enc, key);
     expect(dec.words.length).toBe(data.length);
   });
+
+  test('AES block size boundary lengths', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    for (const len of [15, 16, 17]) {
+      const data = new Uint8Array(len).fill(0);
+      const enc = await CryptoWeb.AES.encrypt(data, key);
+      const dec = await CryptoWeb.AES.decrypt(enc, key);
+      expect(dec.words.length).toBe(len);
+    }
+  });
+
+  test('AES >10MiB round trip', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const data = new Uint8Array((10 << 20) + 1).fill(0);
+    const enc = await CryptoWeb.AES.encrypt(data, key);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.words.length).toBe(data.length);
+  });
 });
