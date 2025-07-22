@@ -175,7 +175,7 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
     expect(cjDec.toString(CryptoJS.enc.Utf8)).toBe('secret');
 
     const cjEncSame = CryptoJS.AES.encrypt('secret', CryptoJS.enc.Hex.parse(keyHex), { iv: cwIvWA });
-    expect(cwEnc.toString()).toBe(cjEncSame.toString());
+    expect(cwEnc.ciphertext.toString(CryptoWeb.enc.Base64)).toBe(cjEncSame.toString());
 
     const cjEnc = CryptoJS.AES.encrypt('secret', CryptoJS.enc.Hex.parse(keyHex), { iv: cwIvWA });
     const webDec = await CryptoWeb.AES.decrypt(cjEnc.toString(), keyHex, { iv: ivHex });
@@ -242,6 +242,13 @@ describe.each(envs)('Additional CryptoWeb cases in %s', (name, getCrypto) => {
     const enc = await CryptoWeb.AES.encrypt('x', key);
     const dec = await CryptoWeb.AES.decrypt(enc, key);
     expect(dec.toString()).toBe('x');
+  });
+
+  test('AES string round trip with embedded IV', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const enc = await CryptoWeb.AES.encrypt('hello', key);
+    const dec = await CryptoWeb.AES.decrypt(enc.toString(), key);
+    expect(dec.toString()).toBe('hello');
   });
 
   test('AES decrypt with wrong key or IV fails', async () => {

@@ -8,8 +8,8 @@ WebCryptoWrapper は、ブラウザの **Web Crypto API** と Node.js の `crypt
 CryptoJS ベースのコードをほぼそのまま流用できます。
 
 AES 暗号化ではパスフレーズを用いた場合に "Salted__" から始まる CryptoJS 形式の
-文字列を返し、16〜32 バイトの鍵を直接指定した場合には暗号文のみを返します。
-後者を復号する際には別途 IV を渡す必要があります。
+文字列を返し、16〜32 バイトの鍵を直接指定した場合には IV を暗号文の前に付加した
+文字列が返されるため、復号時に IV を別途渡す必要はありません。
 
 ## インストール
 
@@ -37,8 +37,8 @@ const CryptoWeb = require('./index');
   const enc = await CryptoWeb.AES.encrypt('hello', key);
   console.log(enc.toString());
 
-  // AES 復号（IV を指定）
-  const dec = await CryptoWeb.AES.decrypt(enc.toString(), key, { iv: enc.iv });
+  // AES 復号
+  const dec = await CryptoWeb.AES.decrypt(enc.toString(), key);
   console.log(dec.toString());
 
   // パスフレーズで AES 暗号化

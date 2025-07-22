@@ -241,7 +241,10 @@
             all.set(cipherBytes, prefix.length + saltBytes.length);
             return encoder.stringify(all);
           }
-          return encoder.stringify(cipherBytes);
+          const all = new Uint8Array(ivBytes.length + cipherBytes.length);
+          all.set(ivBytes);
+          all.set(cipherBytes, ivBytes.length);
+          return encoder.stringify(all);
         }
       };
     },
@@ -263,6 +266,9 @@
         const all = enc.Base64.parse(ciphertext);
         if (all.length >= 16 && enc.Utf8.stringify(all.slice(0, 8)) === 'Salted__') {
           saltBytes = all.slice(8, 16);
+          ctBytes = all.slice(16);
+        } else if (all.length > 16) {
+          ivBytes = all.slice(0, 16);
           ctBytes = all.slice(16);
         } else {
           ctBytes = all;
