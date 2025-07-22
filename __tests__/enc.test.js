@@ -24,4 +24,16 @@ describe.each(envs)('Encoding helpers in %s', (name, getCrypto) => {
   test('Base64.parse throws on invalid input', () => {
     expect(() => CryptoWeb.enc.Base64.parse('$!')).toThrow();
   });
+
+  test('encoding helpers invalid input', () => {
+    expect(() => CryptoWeb.enc.Hex.parse(null)).toThrow();
+    expect(() => CryptoWeb.enc.Hex.stringify(null)).toThrow();
+    expect(() => CryptoWeb.enc.Base64.parse(undefined)).toThrow();
+    expect(() => CryptoWeb.enc.Base64.stringify(undefined)).toThrow();
+    expect(() => CryptoWeb.enc.Utf8.stringify(null)).toThrow();
+    expect(CryptoWeb.enc.Utf8.parse(undefined).length).toBe(0);
+    expect(CryptoWeb.enc.Hex.stringify([])).toBe('');
+    expect(CryptoWeb.enc.Base64.stringify([])).toBe('');
+    expect(CryptoWeb.enc.Utf8.stringify(new Uint8Array(0))).toBe('');
+  });
 });

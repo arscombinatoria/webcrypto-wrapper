@@ -34,4 +34,13 @@ describe.each(envs)('Hash functions in %s', (name, getCrypto) => {
     expect((await CryptoWeb.MD5('abc')).toString()).toBe(vectors.hash.md5.abc);
     expect((await CryptoWeb.MD5(long)).toString()).toBe(vectors.hash.md5.long);
   });
+
+  test('hash invalid input and empty arrays', async () => {
+    await expect(CryptoWeb.SHA1(null)).rejects.toThrow();
+    await expect(CryptoWeb.SHA256(undefined)).rejects.toThrow();
+    await expect(CryptoWeb.SHA512([])).rejects.toThrow();
+    const empty = new Uint8Array(0);
+    expect((await CryptoWeb.SHA1(empty)).toString()).toBe(vectors.hash.sha1['']);
+    expect((await CryptoWeb.MD5(empty)).toString()).toBe('d41d8cd98f00b204e9800998ecf8427e');
+  });
 });

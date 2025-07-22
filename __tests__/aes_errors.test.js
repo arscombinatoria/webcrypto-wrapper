@@ -15,9 +15,13 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
     await expect(CryptoWeb.AES.encrypt('x', new Uint8Array(5))).rejects.toThrow('Key length');
     await expect(CryptoWeb.AES.decrypt('abcd', 'deadbeef')).rejects.toThrow('salt required');
     const keyHex = '00112233445566778899aabbccddeeff';
+    await expect(CryptoWeb.AES.encrypt(null, keyHex)).rejects.toThrow();
+    await expect(CryptoWeb.AES.encrypt(undefined, keyHex)).rejects.toThrow();
     await expect(CryptoWeb.AES.decrypt('abcd', keyHex)).rejects.toThrow('IV required');
     await expect(CryptoWeb.AES.decrypt({ ciphertext: new Uint8Array([1,2,3]) }, keyHex)).rejects.toThrow('IV required');
     await expect(CryptoWeb.AES.decrypt(null, keyHex)).rejects.toThrow('invalid ciphertext');
+    await expect(CryptoWeb.AES.decrypt(undefined, keyHex)).rejects.toThrow('invalid ciphertext');
+    await expect(CryptoWeb.AES.decrypt(new Uint8Array(0), keyHex)).rejects.toThrow('invalid ciphertext');
   });
 
   test('getRandomValues instance reused for IV', async () => {
@@ -38,6 +42,13 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
     expect(enc.ciphertext.words.length).toBe(16);
     const dec = await CryptoWeb.AES.decrypt(enc, key);
     expect(dec.toString()).toBe('');
+  });
+
+  test('AES empty array round trip', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const enc = await CryptoWeb.AES.encrypt(new Uint8Array(0), key);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(dec.words.length).toBe(0);
   });
 
   test('AES auto IV round trip', async () => {

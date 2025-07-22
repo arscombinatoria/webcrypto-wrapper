@@ -44,4 +44,14 @@ describe.each(envs)('PBKDF2 in %s', (name, getCrypto) => {
     const res = await CryptoWeb.PBKDF2('p', 's', { iterations: 1, keySize: 0 });
     expect(res.words.length).toBe(0);
   });
+
+  test('PBKDF2 null/undefined salt rejects', async () => {
+    await expect(CryptoWeb.PBKDF2('p', null)).rejects.toThrow();
+    await expect(CryptoWeb.PBKDF2('p', undefined)).rejects.toThrow();
+  });
+
+  test('PBKDF2 empty salt works', async () => {
+    const res = await CryptoWeb.PBKDF2('p', new Uint8Array(0), { iterations: 1 });
+    expect(res.words.length).toBe(16);
+  });
 });
