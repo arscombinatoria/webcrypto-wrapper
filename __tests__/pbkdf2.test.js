@@ -54,4 +54,13 @@ describe.each(envs)('PBKDF2 in %s', (name, getCrypto) => {
     const res = await CryptoWeb.PBKDF2('p', new Uint8Array(0), { iterations: 1 });
     expect(res.words.length).toBe(16);
   });
+
+  test('PBKDF2 Buffer input and Array rejects', async () => {
+    const bufPass = Buffer.from('password');
+    const bufSalt = Buffer.from('salt');
+    const a = await CryptoWeb.PBKDF2('password', 'salt', { iterations: 1, keySize: 4 });
+    const b = await CryptoWeb.PBKDF2(bufPass, bufSalt, { iterations: 1, keySize: 4 });
+    expect(b.toString()).toBe(a.toString());
+    await expect(CryptoWeb.PBKDF2([1,2,3], [4,5,6], { iterations: 1 })).rejects.toThrow();
+  });
 });

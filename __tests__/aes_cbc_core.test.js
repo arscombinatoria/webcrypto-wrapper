@@ -53,4 +53,16 @@ describe.each(envs)('AES core in %s', (name, getCrypto) => {
     const dec = await CryptoWeb.AES.decrypt(enc, key);
     expect(dec.toString()).toBe(str);
   });
+
+  test('AES encrypt/decrypt with Buffer', async () => {
+    const v = vectors.aesCbc[0];
+    const pt = Buffer.from(v.pt, 'hex');
+    const key = Buffer.from(v.key, 'hex');
+    const iv = Buffer.from(v.iv, 'hex');
+    const enc = await CryptoWeb.AES.encrypt(pt, key, { iv });
+    const hex = enc.ciphertext.toString(CryptoWeb.enc.Hex);
+    expect(hex.slice(0, v.ct.length)).toBe(v.ct);
+    const dec = await CryptoWeb.AES.decrypt(enc, key);
+    expect(CryptoWeb.enc.Hex.stringify(dec.words)).toBe(v.pt);
+  });
 });
