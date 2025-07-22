@@ -15,6 +15,8 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
     await expect(CryptoWeb.AES.encrypt('x', new Uint8Array(5))).rejects.toThrow('Key length');
     await expect(CryptoWeb.AES.decrypt('abcd', 'deadbeef')).rejects.toThrow('salt required');
     const keyHex = '00112233445566778899aabbccddeeff';
+    await expect(CryptoWeb.AES.encrypt([1,2,3], keyHex)).rejects.toThrow();
+    await expect(CryptoWeb.AES.decrypt({ ciphertext: [1,2,3], iv: '000102030405060708090a0b0c0d0e0f' }, keyHex)).rejects.toThrow();
     await expect(CryptoWeb.AES.encrypt(null, keyHex)).rejects.toThrow();
     await expect(CryptoWeb.AES.encrypt(undefined, keyHex)).rejects.toThrow();
     await expect(CryptoWeb.AES.decrypt('abcd', keyHex)).rejects.toThrow('IV required');

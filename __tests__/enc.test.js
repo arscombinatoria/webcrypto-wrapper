@@ -36,4 +36,15 @@ describe.each(envs)('Encoding helpers in %s', (name, getCrypto) => {
     expect(CryptoWeb.enc.Base64.stringify([])).toBe('');
     expect(CryptoWeb.enc.Utf8.stringify(new Uint8Array(0))).toBe('');
   });
+
+  test('encoding helpers with ArrayLike input', () => {
+    const bytes = [0x68, 0x69];
+    const buf = Buffer.from(bytes);
+    expect(CryptoWeb.enc.Hex.stringify(buf)).toBe('6869');
+    expect(CryptoWeb.enc.Hex.stringify(bytes)).toBe('6869');
+    expect(CryptoWeb.enc.Base64.stringify(buf)).toBe('aGk=');
+    expect(CryptoWeb.enc.Base64.stringify(bytes)).toBe('aGk=');
+    expect(CryptoWeb.enc.Utf8.stringify(buf)).toBe('hi');
+    expect(() => CryptoWeb.enc.Utf8.stringify(bytes)).toThrow();
+  });
 });
