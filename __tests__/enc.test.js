@@ -47,4 +47,30 @@ describe.each(envs)('Encoding helpers in %s', (name, getCrypto) => {
     expect(CryptoWeb.enc.Utf8.stringify(buf)).toBe('hi');
     expect(() => CryptoWeb.enc.Utf8.stringify(bytes)).toThrow();
   });
+
+  test('Hex.parse odd length and invalid chars', () => {
+    expect(Array.from(CryptoWeb.enc.Hex.parse('abc')))
+      .toEqual(Array.from(CryptoWeb.enc.Hex.parse('ab')));
+    expect(Array.from(CryptoWeb.enc.Hex.parse('gh'))).toEqual([0]);
+  });
+
+  test('Base64.parse edge cases', () => {
+    const noPad = CryptoWeb.enc.Base64.parse('aGk');
+    expect(CryptoWeb.enc.Utf8.stringify(noPad)).toBe('hi');
+    expect(() => CryptoWeb.enc.Base64.parse('aGk=\naGk=')).toThrow();
+    expect(() => CryptoWeb.enc.Base64.parse('??')).toThrow();
+  });
+
+  test('Utf8 special strings', () => {
+    const nul = CryptoWeb.enc.Utf8.parse('a\0b');
+    expect(nul[1]).toBe(0);
+    expect(CryptoWeb.enc.Utf8.stringify(nul)).toBe('a\0b');
+
+    const invalid = CryptoWeb.enc.Utf8.parse('\uD800');
+    expect(CryptoWeb.enc.Utf8.stringify(invalid)).toBe('\uFFFD');
+
+    const composite = 'A\u030A';
+    const round = CryptoWeb.enc.Utf8.stringify(CryptoWeb.enc.Utf8.parse(composite));
+    expect(round).toBe(composite);
+  });
 });
