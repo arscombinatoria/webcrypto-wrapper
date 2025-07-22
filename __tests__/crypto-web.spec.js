@@ -102,7 +102,7 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
     for (const v of vectors.aesCbc) {
       const pt = CryptoWeb.enc.Hex.parse(v.pt);
       const r = await CryptoWeb.AES.encrypt(pt, v.key, { iv: v.iv });
-      const hex = CryptoWeb.enc.Hex.stringify(r.ciphertext);
+      const hex = r.ciphertext.toString(CryptoWeb.enc.Hex);
       expect(hex.slice(0, v.ct.length)).toBe(v.ct);
       const dec = await CryptoWeb.AES.decrypt(r, v.key);
       expect(CryptoWeb.enc.Hex.stringify(dec.words)).toBe(v.pt);
@@ -111,7 +111,7 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
 
   test('EVP_BytesToKey compatibility', async () => {
     const enc = await CryptoWeb.AES.encrypt('Hello', 'secret', { salt: vectors.evp.salt });
-    expect(CryptoWeb.enc.Hex.stringify(enc.iv).toUpperCase()).toBe(vectors.evp.iv);
+    expect(enc.iv.toString(CryptoWeb.enc.Hex).toUpperCase()).toBe(vectors.evp.iv);
     expect(enc.toString()).toBe(vectors.evp.cipher);
     const dec = await CryptoWeb.AES.decrypt(enc.toString(), 'secret');
     expect(dec.toString()).toBe('Hello');
@@ -169,10 +169,13 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
     const ivHex = '000102030405060708090a0b0c0d0e0f';
 
     const cwEnc = await CryptoWeb.AES.encrypt('secret', keyHex, { iv: ivHex });
-    const cwCtWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwEnc.ciphertext));
-    const cwIvWA = CryptoJS.enc.Hex.parse(CryptoWeb.enc.Hex.stringify(cwEnc.iv));
+    const cwCtWA = CryptoJS.enc.Hex.parse(cwEnc.ciphertext.toString());
+    const cwIvWA = CryptoJS.enc.Hex.parse(cwEnc.iv.toString());
     const cjDec = CryptoJS.AES.decrypt({ ciphertext: cwCtWA }, CryptoJS.enc.Hex.parse(keyHex), { iv: cwIvWA });
     expect(cjDec.toString(CryptoJS.enc.Utf8)).toBe('secret');
+
+    const cjEncSame = CryptoJS.AES.encrypt('secret', CryptoJS.enc.Hex.parse(keyHex), { iv: cwIvWA });
+    expect(cwEnc.toString()).toBe(cjEncSame.toString());
 
     const cjEnc = CryptoJS.AES.encrypt('secret', CryptoJS.enc.Hex.parse(keyHex), { iv: cwIvWA });
     const webDec = await CryptoWeb.AES.decrypt(cjEnc.toString(), keyHex, { iv: ivHex });
@@ -186,6 +189,13 @@ describe.each(envs)('CryptoWeb in %s', (name, getCrypto) => {
     expect((await CryptoWeb.AES.decrypt(cjEncPw.toString(), 'pass')).toString()).toBe('hello');
     const cjDecPw = CryptoJS.AES.decrypt(cwEncPw.toString(), 'pass');
     expect(cjDecPw.toString(CryptoJS.enc.Utf8)).toBe('hello');
+  });
+
+  test('AES encrypt result matches CryptoJS without IV', async () => {
+    const salt = '0102030405060708';
+    const cwAuto = await CryptoWeb.AES.encrypt('auto', 'p@ss', { salt });
+    const cjAuto = CryptoJS.AES.encrypt('auto', 'p@ss', { salt: CryptoJS.enc.Hex.parse(salt) });
+    expect(cwAuto.toString()).toBe(cjAuto.toString());
   });
 });
 
@@ -209,7 +219,7 @@ describe.each(envs)('Additional CryptoWeb cases in %s', (name, getCrypto) => {
     const spy = jest.spyOn(wc, 'getRandomValues').mockImplementation(arr => { arr.fill(0xAA); return arr; });
     const enc = await CryptoWeb.AES.encrypt('hello', key);
     const passed = spy.mock.calls[0][0];
-    expect(enc.iv).toBe(passed);
+    expect(enc.iv.words).toBe(passed);
     expect(spy.mock.results[0].value).toBe(passed);
     spy.mockRestore();
   });
@@ -222,7 +232,7 @@ describe.each(envs)('Additional CryptoWeb cases in %s', (name, getCrypto) => {
     const key = '00112233445566778899aabbccddeeff';
     const iv = '000102030405060708090a0b0c0d0e0f';
     const enc = await CryptoWeb.AES.encrypt('', key, { iv });
-    expect(enc.ciphertext.length).toBe(16);
+    expect(enc.ciphertext.words.length).toBe(16);
     const dec = await CryptoWeb.AES.decrypt(enc, key);
     expect(dec.toString()).toBe('');
   });
