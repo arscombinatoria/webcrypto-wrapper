@@ -47,4 +47,29 @@ describe.each(envs)('Encoding helpers in %s', (name, getCrypto) => {
     expect(CryptoWeb.enc.Utf8.stringify(buf)).toBe('hi');
     expect(() => CryptoWeb.enc.Utf8.stringify(bytes)).toThrow();
   });
+
+  test('Hex.parse odd length and invalid characters', () => {
+    expect(Array.from(CryptoWeb.enc.Hex.parse('abc'))).toEqual([0xab]);
+    expect(Array.from(CryptoWeb.enc.Hex.parse('zz'))).toEqual([0x00]);
+  });
+
+  test('Base64.parse padding, invalid chars and newline', () => {
+    expect(CryptoWeb.enc.Utf8.stringify(CryptoWeb.enc.Base64.parse('aGk'))).toBe('hi');
+    expect(() => CryptoWeb.enc.Base64.parse('aGk@')).toThrow();
+    expect(() => CryptoWeb.enc.Base64.parse('aGk=\naGk=')).toThrow();
+  });
+
+  test('Utf8 parse/stringify edge cases', () => {
+    const nul = 'a\0b';
+    const nulBytes = CryptoWeb.enc.Utf8.parse(nul);
+    expect(CryptoWeb.enc.Utf8.stringify(nulBytes)).toBe(nul);
+
+    const bad = '\uD800';
+    const badBytes = CryptoWeb.enc.Utf8.parse(bad);
+    expect(CryptoWeb.enc.Utf8.stringify(badBytes)).toBe('\uFFFD');
+
+    const composed = 'e\u0301';
+    const compBytes = CryptoWeb.enc.Utf8.parse(composed);
+    expect(CryptoWeb.enc.Utf8.stringify(compBytes)).toBe(composed);
+  });
 });
