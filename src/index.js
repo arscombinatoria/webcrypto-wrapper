@@ -70,6 +70,20 @@
     }
   };
 
+  /**
+   * Create a CryptoJS compatible word array object from bytes.
+   * @param {Uint8Array} bytes - Input bytes.
+   * @param {Object} [encoder=enc.Hex] - Default encoder for toString().
+   * @returns {{words: Uint8Array, sigBytes: number, toString: function}}
+   */
+  function wa(bytes, encoder = enc.Hex) {
+    return {
+      words: bytes,
+      sigBytes: bytes.length,
+      toString(fmt = encoder) { return fmt.stringify(bytes); }
+    };
+  }
+
   /* PBKDF2 --------------------------------------------------------------- */
   /**
    * Derive a key using PBKDF2.
@@ -90,11 +104,7 @@
     const baseKey = await subtle.importKey('raw', passBytes, 'PBKDF2', false, ['deriveBits']);
     const bits = await subtle.deriveBits({ name: 'PBKDF2', salt: saltBytes, iterations, hash }, baseKey, keySize * 32);
     const bytes = new Uint8Array(bits);
-    return {
-      words: bytes,
-      sigBytes: bytes.length,
-      toString(encoder = enc.Hex) { return encoder.stringify(bytes); }
-    };
+    return wa(bytes, enc.Hex);
   }
 
   /**
@@ -219,9 +229,9 @@
       const cipherBuf = await subtle.encrypt({ name: 'AES-CBC', iv: ivBytes }, cryptoKey, ptBytes);
       const cipherBytes = new Uint8Array(cipherBuf);
       return {
-        iv: ivBytes,
-        salt: saltBytes,
-        ciphertext: cipherBytes,
+        iv: wa(ivBytes, enc.Hex),
+        salt: saltBytes && wa(saltBytes, enc.Hex),
+        ciphertext: wa(cipherBytes, enc.Hex),
         toString(encoder = enc.Base64) {
           if (passphrase) {
             const prefix = enc.Utf8.parse('Salted__');
@@ -258,9 +268,9 @@
           ctBytes = all;
         }
       } else if (ciphertext && ciphertext.ciphertext) {
-        ivBytes = ciphertext.iv;
-        ctBytes = ciphertext.ciphertext;
-        saltBytes = ciphertext.salt;
+        ivBytes = ciphertext.iv && (ciphertext.iv.words || ciphertext.iv);
+        ctBytes = ciphertext.ciphertext.words || ciphertext.ciphertext;
+        saltBytes = ciphertext.salt && (ciphertext.salt.words || ciphertext.salt);
       } else if (ciphertext && ciphertext.length) {
         ctBytes = ciphertext;
       } else {
