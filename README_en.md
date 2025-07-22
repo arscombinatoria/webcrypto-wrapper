@@ -14,6 +14,17 @@ npm install webcryptowrapper
 
 For browsers, simply include `index.js` as a script and use `window.CryptoWeb`.
 
+```html
+<!-- example -->
+<script src="./node_modules/webcryptowrapper/src/index.js"></script>
+<script>
+  (async () => {
+    const enc = await CryptoWeb.AES.encrypt('hello', 'secret key 123');
+    console.log(enc.toString());
+  })();
+</script>
+```
+
 ## Usage
 
 ```javascript
