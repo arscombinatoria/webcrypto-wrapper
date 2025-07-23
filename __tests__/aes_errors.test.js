@@ -76,6 +76,33 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
     await expect(CryptoWeb.AES.decrypt({ ciphertext: enc.ciphertext, iv: 'ffeeddccbbaa99887766554433221100' }, key)).rejects.toThrow();
   });
 
+  test('AES invalid IV length', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const iv15 = CryptoWeb.enc.Hex.parse('00'.repeat(30));
+    const iv17 = CryptoWeb.enc.Hex.parse('00'.repeat(34));
+    await expect(CryptoWeb.AES.encrypt('x', key, { iv: iv15 })).rejects.toThrow();
+    await expect(CryptoWeb.AES.encrypt('x', key, { iv: iv17 })).rejects.toThrow();
+    const enc = await CryptoWeb.AES.encrypt('x', key);
+    await expect(CryptoWeb.AES.decrypt({ ciphertext: enc.ciphertext, iv: iv15 }, key)).rejects.toThrow();
+    await expect(CryptoWeb.AES.decrypt({ ciphertext: enc.ciphertext, iv: iv17 }, key)).rejects.toThrow();
+  });
+
+  test('AES decrypt propagates subtle errors', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    const enc = await CryptoWeb.AES.encrypt('hello', key, { iv });
+    const tampered = enc.ciphertext.words.slice();
+    tampered[0] ^= 1;
+    await expect(CryptoWeb.AES.decrypt({ ciphertext: tampered, iv }, key)).rejects.toThrow();
+  });
+
+  test('AES decrypt invalid ciphertext sizes', async () => {
+    const key = '00112233445566778899aabbccddeeff';
+    await expect(CryptoWeb.AES.decrypt('', key)).rejects.toThrow('IV required');
+    const iv = '000102030405060708090a0b0c0d0e0f';
+    await expect(CryptoWeb.AES.decrypt('AA==', key, { iv })).rejects.toThrow();
+  });
+
   test('AES 1MiB round trip', async () => {
     const key = '00112233445566778899aabbccddeeff';
     const data = new Uint8Array(1 << 20).fill(0);
