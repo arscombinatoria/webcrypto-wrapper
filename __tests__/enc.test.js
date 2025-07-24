@@ -72,4 +72,18 @@ describe.each(envs)('Encoding helpers in %s', (name, getCrypto) => {
     const compBytes = CryptoWeb.enc.Utf8.parse(composed);
     expect(CryptoWeb.enc.Utf8.stringify(compBytes)).toBe(composed);
   });
+
+  test('wa default encoder override', () => {
+    const bytes = CryptoWeb.enc.Utf8.parse('hi');
+    const wa = CryptoWeb.wa(bytes, CryptoWeb.enc.Base64);
+    expect(wa.toString()).toBe('aGk=');
+    expect(wa.toString(CryptoWeb.enc.Hex)).toBe('6869');
+  });
+
+  test('wa words reassignment immutability', () => {
+    const orig = CryptoWeb.wa(CryptoWeb.enc.Hex.parse('deadbeef'));
+    const before = orig.toString();
+    orig.words = CryptoWeb.enc.Hex.parse('ffff');
+    expect(orig.toString()).toBe(before);
+  });
 });

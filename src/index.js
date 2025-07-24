@@ -406,5 +406,5 @@
    *         MD5: Function,
    *         SHA1: Function, SHA256: Function, SHA384: Function, SHA512: Function}}
    */
-  return { enc, PBKDF2, AES, MD5, SHA1, SHA256, SHA384, SHA512 };
+  return { enc, wa, PBKDF2, AES, MD5, SHA1, SHA256, SHA384, SHA512 };
 }));
