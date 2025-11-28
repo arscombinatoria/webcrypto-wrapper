@@ -50,6 +50,39 @@ test('Base64 Buffer fallback when atob/btoa missing', () => {
   global.btoa = origBtoa;
 });
 
+test('loads when require("node:crypto") throws by falling back to require("crypto")', () => {
+  jest.resetModules();
+  const fs = require('fs');
+  const vm = require('vm');
+  const code = fs.readFileSync(require.resolve('../src/index.js'), 'utf8');
+  let cryptoFallback = 0;
+  jest.isolateModules(() => {
+    const sandbox = {
+      module: { exports: {} },
+      exports: {},
+      require: (id) => {
+        if (id === 'node:crypto') {
+          throw new Error('mocked failure');
+        }
+        if (id === 'crypto') {
+          cryptoFallback++;
+          return require('crypto');
+        }
+        return require(id);
+      },
+      Buffer,
+      TextEncoder,
+      TextDecoder,
+      self: {},
+      global: {},
+    };
+    vm.runInNewContext(code, sandbox, { filename: 'index.js' });
+    const CW = sandbox.module.exports;
+    expect(CW.AES).toBeDefined();
+  });
+  expect(cryptoFallback).toBeGreaterThan(0);
+});
+
 test('throws when no secure random generator', async () => {
   jest.resetModules();
   const crypto = require('node:crypto');
