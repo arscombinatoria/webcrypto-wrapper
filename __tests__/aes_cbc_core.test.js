@@ -89,6 +89,13 @@ describe.each(envs)('AES core in %s', (name, getCrypto) => {
     await expect(CryptoWeb.AES.decrypt(cjEnc.toString(), pw)).rejects.toThrow();
   });
 
+  test('passphrase encryption returns byte-array salt', async () => {
+    const saltBytes = Uint8Array.from([1, 2, 3, 4, 5, 6, 7, 8]);
+    const enc = await CryptoWeb.AES.encrypt('hello', 'passphrase', { salt: saltBytes });
+    expect(enc.salt).toBeDefined();
+    expect(enc.salt.toString(CryptoWeb.enc.Hex)).toBe('0102030405060708');
+  });
+
   test('string ciphertext without IV and cfg.iv priority', async () => {
     const key = '00112233445566778899aabbccddeeff';
     const iv = '000102030405060708090a0b0c0d0e0f';
