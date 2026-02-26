@@ -1,16 +1,13 @@
 const { webcrypto: nodeCrypto } = require('node:crypto');
 
 test('randomBytes fallback when getRandomValues missing', async () => {
-  jest.resetModules();
+  vi.resetModules();
   const crypto = require('node:crypto');
   const orig = crypto.webcrypto.getRandomValues;
   crypto.webcrypto.getRandomValues = undefined;
   global.crypto = crypto.webcrypto;
-  const spy = jest.spyOn(crypto, 'randomBytes');
-  let CW;
-  jest.isolateModules(() => {
-    CW = require('../src');
-  });
+  const spy = vi.spyOn(crypto, 'randomBytes');
+  const CW = require('../src');
   await CW.AES.encrypt('x', '00112233445566778899aabbccddeeff');
   expect(spy).toHaveBeenCalled();
   spy.mockRestore();
@@ -19,29 +16,23 @@ test('randomBytes fallback when getRandomValues missing', async () => {
 });
 
 test('MD5 JavaScript fallback', async () => {
-  jest.resetModules();
+  vi.resetModules();
   const crypto = require('node:crypto');
   const orig = crypto.createHash;
   delete crypto.createHash;
-  let CW;
-  jest.isolateModules(() => {
-    CW = require('../src');
-  });
+  const CW = require('../src');
   const h = await CW.MD5('abc');
   expect(h.toString().length).toBe(32);
   crypto.createHash = orig;
 });
 
 test('Base64 Buffer fallback when atob/btoa missing', () => {
-  jest.resetModules();
+  vi.resetModules();
   const origAtob = global.atob;
   const origBtoa = global.btoa;
   global.atob = undefined;
   global.btoa = undefined;
-  let CW;
-  jest.isolateModules(() => {
-    CW = require('../src');
-  });
+  const CW = require('../src');
   const b64 = CW.enc.Base64.stringify(Uint8Array.from([104, 105]));
   expect(b64).toBe('aGk=');
   const bytes = CW.enc.Base64.parse(b64);
@@ -51,17 +42,14 @@ test('Base64 Buffer fallback when atob/btoa missing', () => {
 });
 
 test('throws when no secure random generator', async () => {
-  jest.resetModules();
+  vi.resetModules();
   const crypto = require('node:crypto');
   const origGRV = crypto.webcrypto.getRandomValues;
   const origRB = crypto.randomBytes;
   crypto.webcrypto.getRandomValues = undefined;
   delete crypto.randomBytes;
   global.crypto = crypto.webcrypto;
-  let CW;
-  jest.isolateModules(() => {
-    CW = require('../src');
-  });
+  const CW = require('../src');
   await expect(
     CW.AES.encrypt('x', '00112233445566778899aabbccddeeff')
   ).rejects.toThrow('No secure random generator');
@@ -71,7 +59,7 @@ test('throws when no secure random generator', async () => {
 });
 
 test('works with ESM import and UMD global path', async () => {
-  jest.resetModules();
+  vi.resetModules();
   const cwReq = require('../src');
   expect(cwReq.AES).toBeDefined();
 

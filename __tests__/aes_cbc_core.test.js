@@ -12,12 +12,12 @@ describe.each(envs)('AES core in %s', (name, getCrypto) => {
   const orig = global.crypto;
   beforeAll(() => {
     global.crypto = getCrypto();
-    jest.spyOn(global.crypto, 'getRandomValues').mockImplementation(arr => {
+    vi.spyOn(global.crypto, 'getRandomValues').mockImplementation(arr => {
       arr.set(Uint8Array.from({ length: arr.length }, (_, i) => i + 1));
       return arr;
     });
   });
-  afterAll(() => { global.crypto = orig; jest.restoreAllMocks(); });
+  afterAll(() => { global.crypto = orig; vi.restoreAllMocks(); });
 
   test('AES NIST vectors', async () => {
     for (const v of vectors.aesCbc) {
