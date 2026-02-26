@@ -1,5 +1,9 @@
 const { webcrypto } = require('node:crypto');
 const { TextEncoder, TextDecoder } = require('util');
 
-global.crypto = webcrypto;
+Object.defineProperty(global, 'crypto', {
+  value: webcrypto,
+  configurable: true,
+  writable: true
+});
 Object.assign(global, { TextEncoder, TextDecoder });

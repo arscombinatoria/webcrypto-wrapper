@@ -9,7 +9,7 @@ const envs = [
 describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
   const orig = global.crypto;
   beforeAll(() => { global.crypto = getCrypto(); });
-  afterAll(() => { global.crypto = orig; jest.restoreAllMocks(); });
+  afterAll(() => { global.crypto = orig; vi.restoreAllMocks(); });
 
   test('AES invalid parameters', async () => {
     await expect(CryptoWeb.AES.encrypt('x', new Uint8Array(5))).rejects.toThrow('Key length');
@@ -29,7 +29,7 @@ describe.each(envs)('AES error/boundary cases in %s', (name, getCrypto) => {
   test('getRandomValues instance reused for IV', async () => {
     const key = '00112233445566778899aabbccddeeff';
     const wc = require('node:crypto').webcrypto;
-    const spy = jest.spyOn(wc, 'getRandomValues').mockImplementation(arr => { arr.fill(0xAA); return arr; });
+    const spy = vi.spyOn(wc, 'getRandomValues').mockImplementation(arr => { arr.fill(0xAA); return arr; });
     const enc = await CryptoWeb.AES.encrypt('hello', key);
     const passed = spy.mock.calls[0][0];
     expect(enc.iv.words).toBe(passed);

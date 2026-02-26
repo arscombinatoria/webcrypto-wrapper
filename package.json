@@ -4,7 +4,7 @@
   "description": "WebCryptoのラッパー。crypto-js互換",
   "main": "src/index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "vitest run --coverage",
     "posttest": "coverage-badges"
   },
   "keywords": [],
@@ -16,7 +16,8 @@
   },
   "devDependencies": {
     "coverage-badges-cli": "^2.2.0",
-    "jest": "^30.2.0",
-    "jest-environment-jsdom": "^30.2.0"
+    "vitest": "^2.1.9",
+    "jsdom": "^25.0.1",
+    "@vitest/coverage-v8": "^2.1.9"
   }
 }
