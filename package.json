@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "coverage-badges-cli": "^2.2.0",
-    "vitest": "^4.0.18",
+    "vitest": "^4.1.1",
     "jsdom": "^29.0.1",
     "@vitest/coverage-v8": "^4.1.0"
   }
