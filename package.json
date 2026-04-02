@@ -5,7 +5,7 @@
   "main": "src/index.js",
   "scripts": {
     "test": "vitest run --coverage",
-    "posttest": "coverage-badges"
+    "posttest": "coverage-badges --style flat"
   },
   "keywords": [],
   "author": "",
