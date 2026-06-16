@@ -133,7 +133,7 @@
     const buf = new Uint8Array(withPadding);
     buf.set(bytes);
     buf[len] = 0x80;
-    for (let i = 0; i < 8; i++) buf[withPadding - 8 + i] = (bitLen >>> (8 * i)) & 0xff;
+    for (let i = 0; i < 8; i++) buf[withPadding - 8 + i] = Math.floor(bitLen / (2 ** (8 * i))) & 0xff;
     let a0 = 0x67452301, b0 = 0xefcdab89, c0 = 0x98badcfe, d0 = 0x10325476;
     const view = new DataView(buf.buffer);
     for (let i = 0; i < withPadding; i += 64) {
